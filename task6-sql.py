@@ -6,13 +6,13 @@ import sys
 
 
 def getQuery():
-    return """select registration_state, sum(total) as total
-              from (select case registration_state
-                                        when 'NY' then 'NY'
-                                        else 'Other' end as registration_state, count(*) as total
+    return """select * from
+              (select plate_id, registration_state, count(*) as total
               from parking
-              group by registration_state)
-              group by registration_state"""
+              group by plate_id, registration_state
+              order by registration_state, cast(substring(plate_id, 1, 2) as int))
+              order by total desc
+              limit 20"""
 
 
 
@@ -21,7 +21,7 @@ def main(spark,filename):
     DF.createOrReplaceTempView("parking")
     query = getQuery()
     result = spark.sql(query)
-    result.select(format_string('%s\t%d',result.registration_state, result.total)).write.save("task4-sql.out",format="text")
+    result.select(format_string('%s, %s\t%d',result.plate_id, result.registration_state, result.total)).write.save("task6-sql.out",format="text")
 
 if __name__ == "__main__":
     spark = SparkSession.builder.getOrCreate()
